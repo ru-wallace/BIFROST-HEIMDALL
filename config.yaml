@@ -122,7 +122,7 @@ atmosphere:
 #     Outputs solar and lunar spectral irradiance, PAR, and
 #     broadband irradiance above the surface.
 #
-#   LEVEL 2 — Irradiance entering the water (e.g. melt pond analysis)
+#   LEVEL 2 — Irradiance entering the water (e.g. sea ice analysis)
 #     above_surface_only: false
 #     compute_depth_profile: false
 #     Adds BIFROST transmission through snow, ice, and open water.
