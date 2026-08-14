@@ -80,7 +80,7 @@ def fetch_ice_data(
     else:
         # Metadata unavailable — fall back to known TOPAZ4 domain
         lat_min, lat_max = 50.0, 90.0
-        lon_min, lon_max = -180.0, 180.0
+        lon_min, lon_max = -180.0, 179.875
 
     in_coverage_idx = [
         i for i, loc in enumerate(locations)
@@ -90,10 +90,11 @@ def fetch_ice_data(
     out_of_coverage = L - len(in_coverage_idx)
 
     if out_of_coverage > 0:
-        print(
-            f"  {out_of_coverage} of {L} location(s) are outside the TOPAZ4 spatial "
-            f"domain (lat {lat_min:.0f}°–{lat_max:.0f}°N) — treated as ice-free."
-        )
+      print(
+          f"  {out_of_coverage} of {L} location(s) are outside the TOPAZ4 spatial "
+          f"domain (lat {lat_min:.0f}°–{lat_max:.0f}°N, lon {lon_min:.3f}°–{lon_max:.3f}°) "
+          f"— treated as ice-free."
+      )
 
     # --- Step 3: if no locations need ice data, return zeros ---
     if not in_coverage_idx:
@@ -177,11 +178,12 @@ def _get_dataset_bounds() -> Optional[dict]:
         }
 
         print(
-            f"  TOPAZ4 dataset coverage: "
-            f"{bounds['time_start'].strftime('%d %b %Y')} – "
-            f"{bounds['time_end'].strftime('%d %b %Y')} | "
-            f"lat: {bounds['lat_min']:.0f}°–{bounds['lat_max']:.0f}°N"
-        )
+          f"  TOPAZ4 dataset coverage: "
+          f"{bounds['time_start'].strftime('%d %b %Y')} – "
+          f"{bounds['time_end'].strftime('%d %b %Y')} | "
+          f"lat: {bounds['lat_min']:.0f}°–{bounds['lat_max']:.0f}°N | "
+          f"lon: {bounds['lon_min']:.3f}°–{bounds['lon_max']:.3f}°"
+      )
 
         return bounds
 
