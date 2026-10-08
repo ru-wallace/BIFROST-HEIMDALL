@@ -13,12 +13,12 @@
 # ------------------------------------------------------------
 time:
   # Set true to use explicit timestamps instead of regular spacing
-  use_custom: true
+  use_custom: false
 
   # --- Option A: Regular time grid ---
   start: "2025-10-20 01:00:00"
   end:   "2025-11-20 23:00:00"
-  resolution_minutes: 60
+  resolution_minutes: 120
 
   # --- Option B: Explicit timestamp list (used only when use_custom = true) ---
   timestamps:
@@ -70,6 +70,7 @@ spatial_grid:
   lon_start: -90
   lon_end:   90
   lon_step:   10   # spatial resolution in degrees
+
 
 
 
@@ -174,7 +175,7 @@ open_water_only: true
 # max_depth / depth_resolution_m.
 # ------------------------------------------------------------
 # depth:
-#   compute_depth_profile: false
+#   compute_depth_profile: true
 #   max_depth: 3
 #   depth_resolution_m: 1
 #   chlorophyll: 0.5
@@ -184,8 +185,8 @@ open_water_only: true
 #   #   - 0.6
 #   #   - 0.5
 #   salinity: 34.0
-  # Example non-homogeneous list:
-  # salinity:
-  #   - 34.6
-  #   - 34.2
-  #   - 34.7
+#   # Example non-homogeneous list:
+#   # salinity:
+#   #   - 34.6
+#   #   - 34.2
+#   #   - 34.7
