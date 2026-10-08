@@ -97,6 +97,7 @@ USAGE
 import os
 import numpy as np
 from datetime import datetime, timezone
+import json
 
 # --- Load internal modules ---
 from config_loader import load_model_config
@@ -302,7 +303,45 @@ if __name__ == "__main__":
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     os.makedirs("model_outputs", exist_ok=True)
     output_file = f"model_outputs/model_output_{timestamp}.nc"
-
+    output_file_dict = f"model_outputs/model_output_{timestamp}.json"
     save_results_to_netcdf(results, output_file)
+    
+    #copy results but change numpy arrays and dataclasses to lists for json serialization
+    results_serializable = {}
+    
+    
+    def make_serializable(obj):
+        print(f"Making object serializable: {type(obj)}")
+        if isinstance(obj, np.ndarray):
+            print(f"Converting numpy array to list: {obj.shape}")
+            return obj.tolist()
+        elif isinstance(obj, list):
+            print(f"Converting list of objects to list: {len(obj)}")
+            return [make_serializable(v) for v in obj]
+        elif isinstance(obj, dict):
+            print(f"Converting dict of objects to dict: {len(obj)}")
+            return {k: make_serializable(v) for k, v in obj.items()}
+        elif hasattr(obj, '__dict__'):
+            print(f"Converting dataclass to dict: {obj}")
+            return {k: make_serializable(v) for k, v in obj.__dict__.items()}
+        elif isinstance(obj, np.int64):
+            print(f"Converting numpy int64 to int: {obj}")
+            return int(obj)
+        elif isinstance(obj, np.float64):
+            print(f"Converting numpy float64 to float: {obj}")
+            return float(obj)
+        else:
+            print(f"Returning object as is: {obj}")
+            return obj
+    
+    
+    #results_serializable = make_serializable(results)
+    
+    # print(results_serializable)
+    # with open(output_file_dict, "w") as f:
+    #     f.write(str(results_serializable))
+    
+    
+    #json.dump(results_serializable, open(output_file_dict, "w"), indent=4)
 
     print(f"Model run complete. Output saved to {output_file}")

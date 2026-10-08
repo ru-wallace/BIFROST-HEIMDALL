@@ -159,7 +159,7 @@ def _generate_grid(
 
 def load_model_config(path: str = "config.yaml") -> ModelConfig:
     """Load and validate configuration file into Python dataclasses."""
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
 
     # -------------------------------

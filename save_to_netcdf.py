@@ -1,5 +1,6 @@
 import numpy as np
 import xarray as xr
+import rioxarray as rio
 from datetime import datetime, timezone
 
 
@@ -115,7 +116,33 @@ def save_results_to_netcdf(results: dict, filename: str):
     ], dtype="datetime64[ns]")
 
     latitudes = np.array([loc.latitude for loc in results["locations"]])
+    latitudes = np.unique(latitudes)  # Ensure unique latitudes for the grid
     longitudes = np.array([loc.longitude for loc in results["locations"]])
+    longitudes = np.unique(longitudes)  # Ensure unique longitudes for the grid
+    
+    print(f"Latitudes: {latitudes}")
+    print(f"Longitudes: {longitudes}")
+    
+    print(f"Solar direct shape: {results['solar_direct'].shape}")
+    print(results["solar_direct"])
+    
+    #for each dataset reshape so first dimension is split into latitude and longitude dimensions
+    n_latitudes = len(latitudes)
+    n_longitudes = len(longitudes)
+    
+    solar_direct_reshaped = results["solar_direct"].reshape((n_latitudes, n_longitudes, len(times_unix), len(wavelengths)))
+    solar_diffuse_reshaped = results["solar_diffuse"].reshape((n_latitudes, n_longitudes, len(times_unix), len(wavelengths)))
+    lunar_direct_reshaped = results["lunar_direct"].reshape((n_latitudes, n_longitudes, len(times_unix), len(wavelengths)))
+    lunar_diffuse_reshaped = results["lunar_diffuse"].reshape((n_latitudes, n_longitudes, len(times_unix), len(wavelengths)))
+    spectral_par_reshaped = results["spectral_par"].reshape((n_latitudes, n_longitudes, len(times_unix), len(wavelengths)))
+    broadband_par_reshaped = results["broadband_par"].reshape((n_latitudes, n_longitudes, len(times_unix)))
+    broadband_irradiance_reshaped = results["broadband_irradiance"].reshape((n_latitudes, n_longitudes, len(times_unix)))
+    solar_zenith_reshaped = results["solar_zenith"].reshape((n_latitudes, n_longitudes, len(times_unix)))
+    lunar_zenith_reshaped = results["lunar_zenith"].reshape((n_latitudes, n_longitudes, len(times_unix)))
+    cloud_cover_reshaped = results["cloud_cover"].reshape((n_latitudes, n_longitudes, len(times_unix)))
+    
+    print(f"Reshaped solar direct shape: {solar_direct_reshaped.shape}")
+    print(solar_direct_reshaped)
 
     # ----------------------------
     # Build xarray Dataset
@@ -126,63 +153,63 @@ def save_results_to_netcdf(results: dict, filename: str):
 
             # --- Solar ---
             solar_direct=(
-                ("location", "time", "wavelength"),
-                results["solar_direct"],
+                ("latitude", "longitude", "time", "wavelength"),
+                solar_direct_reshaped,
                 {"units": "W m-2 nm-1"}
             ),
             solar_diffuse=(
-                ("location", "time", "wavelength"),
-                results["solar_diffuse"],
+                ("latitude", "longitude", "time", "wavelength"),
+                solar_diffuse_reshaped,
                 {"units": "W m-2 nm-1"}
             ),
 
             # --- Lunar ---
             lunar_direct=(
-                ("location", "time", "wavelength"),
-                results["lunar_direct"],
+                ("latitude", "longitude", "time", "wavelength"),
+                lunar_direct_reshaped,
                 {"units": "W m-2 nm-1"}
             ),
             lunar_diffuse=(
-                ("location", "time", "wavelength"),
-                results["lunar_diffuse"],
+                ("latitude", "longitude", "time", "wavelength"),
+                lunar_diffuse_reshaped,
                 {"units": "W m-2 nm-1"}
             ),
 
             # --- PAR ---
             spectral_par=(
-                ("location", "time", "wavelength"),
-                results["spectral_par"],
+                ("latitude", "longitude", "time", "wavelength"),
+                spectral_par_reshaped,
                 {"units": "µmol photons m-2 s-1"}
             ),
             broadband_par=(
-                ("location", "time"),
-                results["broadband_par"],
+                ("latitude", "longitude", "time"),
+                broadband_par_reshaped,
                 {"units": "µmol photons m-2 s-1"}
             ),
 
             # --- Broadband irradiance ---
             broadband_irradiance=(
-                ("location", "time"),
-                results["broadband_irradiance"],
+                ("latitude", "longitude", "time"),
+                broadband_irradiance_reshaped,
                 {"units": "W m-2"}
             ),
 
             # --- Geometry ---
             solar_zenith=(
-                ("location", "time"),
-                results["solar_zenith"],
+                ("latitude", "longitude", "time"),
+                solar_zenith_reshaped,
                 {"units": "degrees"}
             ),
             lunar_zenith=(
-                ("location", "time"),
-                results["lunar_zenith"],
+                ("latitude", "longitude", "time"),
+                lunar_zenith_reshaped,
                 {"units": "degrees"}
             ),
 
             # --- Cloud cover ---
             cloud_cover=(
-                ("location", "time"),
-                results["cloud_cover"],
+                ("latitude", "longitude", "time"),
+                cloud_cover_reshaped,
                 {"units": "fraction", "valid_range": [0, 1]}
             ),
 
@@ -193,8 +220,8 @@ def save_results_to_netcdf(results: dict, filename: str):
         coords=dict(
             wavelength=("wavelength", wavelengths, {"units": "nm"}),
             time=("time", times_dt),
-            latitude=("location", latitudes, {"units": "degrees_north"}),
-            longitude=("location", longitudes, {"units": "degrees_east"}),
+            latitude=("latitude", latitudes, {"units": "degrees_north"}),
+            longitude=("longitude", longitudes, {"units": "degrees_east"}),
             **({"depth": ("depth", results["depth_steps"], {"units": "m",
                           "positive": "down"})}
                if "depth_steps" in results else {}),
@@ -207,10 +234,15 @@ def save_results_to_netcdf(results: dict, filename: str):
             conventions="CF-1.8",
         )
     )
+    
+    ds.rio.write_crs("EPSG:4326", inplace=True)  # Set CRS for geospatial data
 
+    
+    ds.rio.set_spatial_dims(x_dim="longitude", y_dim="latitude", inplace=True)  # Set spatial dimensions
     # ----------------------------
     # Save to NetCDF
     # ----------------------------
     ds.to_netcdf(filename)
-
+    
+    #ds.broadband_par.isel(time=0).rio.to_raster(filename.replace(".nc", ".tif"))  # Save first time slice as GeoTIFF
     print(f"Saved NetCDF file: {filename}")
