@@ -1,3 +1,5 @@
-.cdsapirc
-model_outputs/*
 __pycache__/
+model_outputs/
+.cdsapirc
+config*.yaml
+config.yaml.bak
